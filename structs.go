@@ -1,6 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"sync"
+)
 
 type Doujin struct {
 	ID       int    `json:"id"`
@@ -48,6 +56,12 @@ type APIImage struct {
 	URL      string
 }
 
+type zipImage struct {
+	img APIImage
+	buf bytes.Buffer
+	wg  *sync.WaitGroup
+}
+
 func (it *imageType) extension() (ext string) {
 
 	switch *it {
@@ -77,9 +91,25 @@ func (d *Doujin) generateImages() []APIImage {
 	return images
 }
 
-// func NewAPIImage() APIImage {
-// 	image := APIImage{}
-// }
+func NewDoujin(nnn int) Doujin {
+	url := fmt.Sprintf("http://nhentai.net/api/gallery/%d", nnn)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hold := Doujin{}
+	jsonErr := json.Unmarshal(body, &hold)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+	return hold
+}
 
 func (i *APIImage) filename() string {
 	return fmt.Sprintf("%d.%s", i.Index, i.Type.extension())
