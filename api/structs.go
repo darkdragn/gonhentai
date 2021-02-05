@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"bytes"
@@ -56,10 +56,10 @@ type APIImage struct {
 	URL      string
 }
 
-type zipImage struct {
-	img APIImage
-	buf bytes.Buffer
-	wg  *sync.WaitGroup
+type ZipImage struct {
+	Img APIImage
+	Buf bytes.Buffer
+	Wg  *sync.WaitGroup
 }
 
 func (it *imageType) extension() (ext string) {
@@ -82,7 +82,7 @@ func (d *Doujin) generateImage(i int, t imageType) APIImage {
 	return image
 }
 
-func (d *Doujin) generateImages() []APIImage {
+func (d *Doujin) GenerateImages() []APIImage {
 	images := make([]APIImage, len(d.Images.Pages))
 
 	for index, img := range d.Images.Pages {

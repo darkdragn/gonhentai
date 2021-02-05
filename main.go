@@ -11,6 +11,9 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	. "github.com/darkdragn/gomanga/v2/api"
+	"github.com/schollz/progressbar/v3"
 )
 
 var limit int
@@ -29,8 +32,9 @@ func main() {
 func downloadZip(hold Doujin) {
 	var wg sync.WaitGroup
 	limit := make(chan struct{}, 5)
-	images := hold.generateImages()
+	images := hold.GenerateImages()
 
+	bar := progressbar.Default(int64(len(images)))
 	filename := fmt.Sprintf("%s.cbz", hold.Titles.English)
 	file, err := os.Create(filename)
 	defer file.Close()
@@ -38,7 +42,7 @@ func downloadZip(hold Doujin) {
 		log.Fatal(err)
 	}
 
-	bufChan := make(chan zipImage)
+	bufChan := make(chan ZipImage)
 	zipFile := zip.NewWriter(file)
 	defer zipFile.Close()
 
@@ -46,7 +50,7 @@ func downloadZip(hold Doujin) {
 
 		for run := range bufChan {
 			fh := &zip.FileHeader{
-				Name:     run.img.Filename,
+				Name:     run.Img.Filename,
 				Modified: time.Now(),
 				Method:   0,
 			}
@@ -55,11 +59,12 @@ func downloadZip(hold Doujin) {
 				log.Println("At the header")
 				log.Fatal(err)
 			}
-			_, err = io.Copy(f, &run.buf)
+			_, err = io.Copy(f, &run.Buf)
 			if err != nil {
 				log.Fatal(err)
 			}
-			run.wg.Done()
+			bar.Add(1)
+			run.Wg.Done()
 		}
 	}()
 	for _, img := range images {
@@ -71,7 +76,7 @@ func downloadZip(hold Doujin) {
 	close(bufChan)
 }
 
-func saveZip(image APIImage, wg *sync.WaitGroup, bufChan chan zipImage) {
+func saveZip(image APIImage, wg *sync.WaitGroup, bufChan chan ZipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := http.Get(image.URL)
 	if err != nil {
@@ -83,7 +88,7 @@ func saveZip(image APIImage, wg *sync.WaitGroup, bufChan chan zipImage) {
 		log.Println("At the io.Copy")
 		log.Fatal(err)
 	}
-	bufChan <- zipImage{img: image, buf: *buf, wg: wg}
+	bufChan <- ZipImage{Img: image, Buf: *buf, Wg: wg}
 }
 
 func saveImage(image APIImage, wg *sync.WaitGroup) {
