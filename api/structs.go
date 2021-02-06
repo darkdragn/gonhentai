@@ -2,20 +2,25 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"sync"
 )
 
 //Doujin a quick struct for unpacking the response from the nhentai API.
 // Used for responses from nhentai.net/api/galleries/:magicNumber
 type Doujin struct {
-	ID        int    `json:"id"`
-	MediaID   string `json:"media_id"`
-	NumPages  int    `json:"num_pages"`
-	Images    images `json:"images"`
-	Titles    title  `json:"title"`
+	ID        json.Number `json:"id"`
+	MediaID   string      `json:"media_id"`
+	NumPages  int         `json:"num_pages"`
+	Images    images      `json:"images"`
+	Titles    title       `json:"title"`
 	APIImages []Image
 }
 
+type Search struct {
+	Result []Doujin `json:"result"`
+	Pages  int      `json:"num_pages"`
+}
 type title struct {
 	English  string `json:"english"`
 	Japanese string `json:"japanese"`

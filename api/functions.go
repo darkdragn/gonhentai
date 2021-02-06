@@ -9,10 +9,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -23,13 +26,23 @@ func catch(err error) {
 }
 
 //DownloadZip is used to pull the Doujin to disk as {doujin.Title.English}.cbz
-func (d Doujin) DownloadZip(limitRAW int) {
+func (d Doujin) DownloadZip(limitRAW int, pretty bool) {
 	var wg sync.WaitGroup
 	limit := make(chan struct{}, limitRAW)
 	images := d.APIImages
 
+	var filename string
+	if pretty {
+		filename = fmt.Sprintf("%s.cbz", d.Titles.Pretty)
+	} else {
+		filename = fmt.Sprintf("%s.cbz", d.Titles.English)
+	}
+	fmt.Printf("%s\n", filename)
+	if _, err := os.Stat(filename); err == nil {
+		return
+	}
 	bar := progressbar.Default(int64(len(images)))
-	filename := fmt.Sprintf("%s.cbz", d.Titles.English)
+
 	file, err := os.Create(filename)
 	defer file.Close()
 	catch(err)
@@ -72,22 +85,6 @@ func (d *Doujin) generateImages() []Image {
 	return images
 }
 
-func handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
-
-	for run := range bufChan {
-		fh := &zip.FileHeader{
-			Name:     run.Img.Filename,
-			Modified: time.Now(),
-			Method:   0,
-		}
-		f, err := zipFile.CreateHeader(fh)
-		catch(err)
-		_, err = io.Copy(f, &run.Buf)
-		catch(err)
-		completion <- true
-	}
-}
-
 func (i Image) imageToZip(bufChan chan zipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := http.Get(i.URL)
@@ -120,6 +117,41 @@ func (it *imageType) extension() (ext string) {
 	return
 }
 
+func (s Search) ReturnDoujin(index int) Doujin {
+	magicNumber, _ := s.Result[index].ID.Int64()
+	return NewDoujin(int(magicNumber))
+}
+
+func (s Search) RenderTable(pretty bool, page int) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	for ind, d := range s.Result {
+		title := d.Titles.English
+		if pretty {
+			title = d.Titles.Pretty
+		}
+		t.AppendRow([]interface{}{ind, d.ID, title})
+	}
+	t.Render()
+	fmt.Printf("Page %d/%d\n", page, s.Pages)
+}
+
+func handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
+
+	for run := range bufChan {
+		fh := &zip.FileHeader{
+			Name:     run.Img.Filename,
+			Modified: time.Now(),
+			Method:   0,
+		}
+		f, err := zipFile.CreateHeader(fh)
+		catch(err)
+		_, err = io.Copy(f, &run.Buf)
+		catch(err)
+		completion <- true
+	}
+}
+
 //NewDoujin is used to generate a doujin instance with Image instances attached at APIImages
 func NewDoujin(nnn int) Doujin {
 	url := fmt.Sprintf("http://nhentai.net/api/gallery/%d", nnn)
@@ -136,4 +168,24 @@ func NewDoujin(nnn int) Doujin {
 
 	hold.APIImages = hold.generateImages()
 	return hold
+}
+
+func NewSearch(query string, page int) Search {
+	surl, err := url.Parse("https://nhentai.net/api/galleries/search")
+	catch(err)
+
+	values := url.Values{}
+	values.Add("query", query)
+	values.Add("page", strconv.Itoa(page))
+	surl.RawQuery = values.Encode()
+	resp, err := http.Get(surl.String())
+	catch(err)
+
+	search := Search{}
+	body, err := ioutil.ReadAll(resp.Body)
+	catch(err)
+
+	jsonErr := json.Unmarshal(body, &search)
+	catch(jsonErr)
+	return search
 }
