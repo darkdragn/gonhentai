@@ -56,7 +56,6 @@ type Image struct {
 	URL      string
 }
 
-//ZipImage is used for passing an image struct and a buffer between goroutines
 type zipImage struct {
 	Img Image
 	Buf bytes.Buffer

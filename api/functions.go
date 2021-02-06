@@ -39,7 +39,7 @@ func (d Doujin) DownloadZip(limitRAW int) {
 	defer zipFile.Close()
 
 	completion := make(chan bool)
-	go HandleZip(bufChan, zipFile, completion)
+	go handleZip(bufChan, zipFile, completion)
 	go func() {
 		for range completion {
 			wg.Done()
@@ -49,7 +49,7 @@ func (d Doujin) DownloadZip(limitRAW int) {
 	for _, img := range images {
 		limit <- struct{}{}
 		wg.Add(1)
-		go func(img Image) { img.ImageToZip(bufChan); <-limit }(img)
+		go func(img Image) { img.imageToZip(bufChan); <-limit }(img)
 	}
 
 	wg.Wait()
@@ -72,7 +72,7 @@ func (d *Doujin) generateImages() []Image {
 	return images
 }
 
-func HandleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
+func handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
 
 	for run := range bufChan {
 		fh := &zip.FileHeader{
@@ -88,7 +88,7 @@ func HandleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool)
 	}
 }
 
-func (i Image) ImageToZip(bufChan chan zipImage) {
+func (i Image) imageToZip(bufChan chan zipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := http.Get(i.URL)
 	catch(err)
