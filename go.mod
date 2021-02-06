@@ -1,4 +1,4 @@
-module github.com/darkdragn/gomanga/v2
+module github.com/darkdragn/gonhentai/v2
 
 go 1.15
 

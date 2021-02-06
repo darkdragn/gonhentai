@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/darkdragn/gomanga/v2/api"
+	. "github.com/darkdragn/gonhentai/v2/api"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -29,6 +29,12 @@ func main() {
 	downloadZip(hold)
 }
 
+func catch(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func downloadZip(hold Doujin) {
 	var wg sync.WaitGroup
 	limit := make(chan struct{}, 5)
@@ -38,9 +44,7 @@ func downloadZip(hold Doujin) {
 	filename := fmt.Sprintf("%s.cbz", hold.Titles.English)
 	file, err := os.Create(filename)
 	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	catch(err)
 
 	bufChan := make(chan ZipImage)
 	zipFile := zip.NewWriter(file)
@@ -55,14 +59,9 @@ func downloadZip(hold Doujin) {
 				Method:   0,
 			}
 			f, err := zipFile.CreateHeader(fh)
-			if err != nil {
-				log.Println("At the header")
-				log.Fatal(err)
-			}
+			catch(err)
 			_, err = io.Copy(f, &run.Buf)
-			if err != nil {
-				log.Fatal(err)
-			}
+			catch(err)
 			bar.Add(1)
 			run.Wg.Done()
 		}
@@ -79,32 +78,21 @@ func downloadZip(hold Doujin) {
 func saveZip(image APIImage, wg *sync.WaitGroup, bufChan chan ZipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := http.Get(image.URL)
-	if err != nil {
-		log.Fatal(err)
-	}
+	catch(err)
 	defer resp.Body.Close()
 	_, err = io.Copy(buf, resp.Body)
-	if err != nil {
-		log.Println("At the io.Copy")
-		log.Fatal(err)
-	}
+	catch(err)
 	bufChan <- ZipImage{Img: image, Buf: *buf, Wg: wg}
 }
 
 func saveImage(image APIImage, wg *sync.WaitGroup) {
 	out, err := os.Create(image.Filename)
 	defer out.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	catch(err)
 	resp, err := http.Get(image.URL)
-	if err != nil {
-		log.Fatal(err)
-	}
+	catch(err)
 	defer resp.Body.Close()
 	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	catch(err)
 	wg.Done()
 }
