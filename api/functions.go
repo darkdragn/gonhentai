@@ -37,18 +37,20 @@ func (d Doujin) DownloadZip(limitRAW int, pretty bool) {
 	} else {
 		filename = fmt.Sprintf("%s.cbz", d.Titles.English)
 	}
-	fmt.Printf("%s\n", filename)
+	// fmt.Printf("%s\n", filename)
 	if _, err := os.Stat(filename); err == nil {
 		return
 	}
-	bar := progressbar.Default(int64(len(images)))
+	bar := progressbar.DefaultBytes(-1, d.Titles.Pretty)
+	// bar := progressbar.Default(int64(len(images)))
 
 	file, err := os.Create(filename)
 	defer file.Close()
 	catch(err)
 
 	bufChan := make(chan zipImage)
-	zipFile := zip.NewWriter(file)
+	zipFile := zip.NewWriter(io.MultiWriter(file, bar))
+	// zipFile := zip.NewWriter(file)
 	defer zipFile.Close()
 
 	completion := make(chan bool)
@@ -67,6 +69,7 @@ func (d Doujin) DownloadZip(limitRAW int, pretty bool) {
 
 	wg.Wait()
 	close(bufChan)
+	bar.Finish()
 }
 
 func (d *Doujin) generateImage(i int, t imageType) Image {
