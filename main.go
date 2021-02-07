@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/darkdragn/gonhentai/v2/api"
+	"github.com/darkdragn/gonhentai/api"
 )
 
 var limitRAW int
