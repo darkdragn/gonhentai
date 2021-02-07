@@ -89,9 +89,11 @@ func (i Image) imageToZip(bufChan chan zipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := http.Get(i.URL)
 	catch(err)
+
 	defer resp.Body.Close()
 	_, err = io.Copy(buf, resp.Body)
 	catch(err)
+
 	bufChan <- zipImage{Img: i, Buf: *buf}
 }
 
@@ -146,8 +148,10 @@ func handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool)
 		}
 		f, err := zipFile.CreateHeader(fh)
 		catch(err)
+
 		_, err = io.Copy(f, &run.Buf)
 		catch(err)
+
 		completion <- true
 	}
 }
