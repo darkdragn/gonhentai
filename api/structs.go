@@ -22,6 +22,11 @@ type Doujin struct {
 		Japanese string `json:"japanese"`
 		Pretty   string `json:"pretty"`
 	} `json:"title"`
+	Tags []struct {
+		ID   json.Number `json:"id"`
+		Type string      `json:"type"`
+		Name string      `json:"name"`
+	} `json:"tags"`
 	APIImages []Image
 }
 

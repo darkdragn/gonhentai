@@ -26,14 +26,22 @@ func catch(err error) {
 }
 
 //DownloadZip is used to pull the Doujin to disk as {doujin.Title.English}.cbz
-func (d Doujin) DownloadZip(limitRAW int, pretty bool) {
+func (d Doujin) DownloadZip(limitRAW int, pretty bool, artist bool) {
 	var wg sync.WaitGroup
 	limit := make(chan struct{}, limitRAW)
 	images := d.APIImages
 
 	var filename string
+	if artist {
+		pretty = true
+		filename = d.Artist()
+		err := os.Mkdir(filename, 0755)
+		catch(err)
+	}
+
 	if pretty {
-		filename = fmt.Sprintf("%s.cbz", d.Titles.Pretty)
+		// filename = fmt.Sprintf("%s.cbz", d.Titles.Pretty)
+		filename = d.Titles.Pretty + ".cbz"
 	} else {
 		filename = fmt.Sprintf("%s.cbz", d.Titles.English)
 	}
@@ -70,6 +78,15 @@ func (d Doujin) DownloadZip(limitRAW int, pretty bool) {
 	wg.Wait()
 	close(bufChan)
 	bar.Finish()
+}
+
+func (d *Doujin) Artist() string {
+	for _, tag := range d.Tags {
+		if tag.Type == "artist" {
+			return tag.Name
+		}
+	}
+	return "Not Found"
 }
 
 func (d *Doujin) generateImage(i int, t imageType) Image {
