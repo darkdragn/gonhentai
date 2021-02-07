@@ -34,14 +34,14 @@ func (d Doujin) DownloadZip(limitRAW int, pretty bool, artist bool) {
 	var filename string
 	if artist {
 		pretty = true
-		filename = d.Artist()
-		err := os.Mkdir(filename, 0755)
-		catch(err)
+		filename = d.Artist() + "/"
+		_ = os.Mkdir(filename, 0755)
+		// catch(err)
 	}
 
 	if pretty {
 		// filename = fmt.Sprintf("%s.cbz", d.Titles.Pretty)
-		filename = d.Titles.Pretty + ".cbz"
+		filename += d.Titles.Pretty + ".cbz"
 	} else {
 		filename = fmt.Sprintf("%s.cbz", d.Titles.English)
 	}
