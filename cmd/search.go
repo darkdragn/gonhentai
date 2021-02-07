@@ -32,20 +32,24 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		search := api.NewSearch(args[0], 1)
+		// search := api.NewSearch(args[0], 1)
 		artist, _ := cmd.Flags().GetBool("artist")
 		all, _ := cmd.Flags().GetBool("all")
+		page, _ := cmd.Flags().GetInt("page")
+		search := api.NewSearch(args[0], page)
 		if cmd.Flags().Changed("number") {
-			n, _ := cmd.Flags().GetInt("number")
-			d := search.ReturnDoujin(n)
-			d.DownloadZip(5, false, artist)
+			ns, _ := cmd.Flags().GetIntSlice("number")
+			for _, n := range ns {
+				d := search.ReturnDoujin(n)
+				d.DownloadZip(5, false, artist)
+			}
 		} else if all {
 			for ind, _ := range search.Result {
 				doujin := search.ReturnDoujin(ind)
 				doujin.DownloadZip(5, false, artist)
 			}
 		} else {
-			search.RenderTable(true, 1)
+			search.RenderTable(true, page)
 		}
 	},
 }
@@ -62,7 +66,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// searchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	searchCmd.Flags().IntP("number", "n", 50, "Pull")
+	searchCmd.Flags().IntSliceP("number", "n", []int{50}, "Pull")
+	searchCmd.Flags().IntP("page", "p", 1, "Select search page")
 	searchCmd.Flags().BoolP("artist", "a", false, "Store things in an artist directory")
 	searchCmd.Flags().Bool("all", false, "Download all results")
 }
