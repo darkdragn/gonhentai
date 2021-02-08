@@ -1,83 +1,45 @@
 package api
 
 import (
-	"archive/zip"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/schollz/progressbar/v3"
 )
 
 func catch(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
-//DownloadZip is used to pull the Doujin to disk as {doujin.Title.English}.cbz
-func (d Doujin) DownloadZip(limitRAW int, pretty bool, artist bool) {
-	var wg sync.WaitGroup
-	limit := make(chan struct{}, limitRAW)
-	images := d.APIImages
-
-	var filename string
-	if artist {
-		pretty = true
-		filename = d.Artist() + "/"
-		_ = os.Mkdir(filename, 0755)
-		// catch(err)
+func NewClient(args ...interface{}) (client APIClient) {
+	limit := 5
+	client = APIClient{
+		BaseURL: "https://nhentai.net/api",
+		Client: &http.Client{
+			Timeout: time.Second * 10,
+		},
+		// Limit: 3,
 	}
-
-	if pretty {
-		// filename = fmt.Sprintf("%s.cbz", d.Titles.Pretty)
-		filename += d.Titles.Pretty + ".cbz"
-	} else {
-		filename = fmt.Sprintf("%s.cbz", d.Titles.English)
-	}
-	// fmt.Printf("%s\n", filename)
-	if _, err := os.Stat(filename); err == nil {
-		return
-	}
-	bar := progressbar.DefaultBytes(-1, d.Titles.Pretty)
-	// bar := progressbar.Default(int64(len(images)))
-
-	file, err := os.Create(filename)
-	defer file.Close()
-	catch(err)
-
-	bufChan := make(chan zipImage)
-	zipFile := zip.NewWriter(io.MultiWriter(file, bar))
-	// zipFile := zip.NewWriter(file)
-	defer zipFile.Close()
-
-	completion := make(chan bool)
-	go handleZip(bufChan, zipFile, completion)
-	go func() {
-		for range completion {
-			wg.Done()
-			bar.Add(1)
+	for _, arg := range args {
+		switch t := arg.(type) {
+		case int:
+			limit = t
+		case bool:
+			client.Artist = t
 		}
-	}()
-	for _, img := range images {
-		limit <- struct{}{}
-		wg.Add(1)
-		go func(img Image) { img.imageToZip(bufChan); <-limit }(img)
 	}
-
-	wg.Wait()
-	close(bufChan)
-	bar.Finish()
+	client.Limit = make(chan struct{}, limit)
+	// client.Buffer = make(chan zipImage)
+	return
 }
 
 func (d *Doujin) Artist() string {
@@ -105,18 +67,6 @@ func (d *Doujin) generateImages() []Image {
 	return images
 }
 
-func (i Image) imageToZip(bufChan chan zipImage) {
-	buf := new(bytes.Buffer)
-	resp, err := http.Get(i.URL)
-	catch(err)
-
-	defer resp.Body.Close()
-	_, err = io.Copy(buf, resp.Body)
-	catch(err)
-
-	bufChan <- zipImage{Img: i, Buf: *buf}
-}
-
 func (i *Image) filename() string {
 	return fmt.Sprintf("%d.%s", i.Index, i.Type.extension())
 }
@@ -141,7 +91,7 @@ func (it *imageType) extension() (ext string) {
 
 func (s Search) ReturnDoujin(index int) Doujin {
 	magicNumber, _ := s.Result[index].ID.Int64()
-	return NewDoujin(int(magicNumber))
+	return s.Client.NewDoujin(int(magicNumber))
 }
 
 func (s Search) RenderTable(pretty bool, page int) {
@@ -149,37 +99,20 @@ func (s Search) RenderTable(pretty bool, page int) {
 	t.SetOutputMirror(os.Stdout)
 	for ind, d := range s.Result {
 		title := d.Titles.English
+		artist := d.Artist()
 		if pretty {
 			title = d.Titles.Pretty
 		}
-		t.AppendRow([]interface{}{ind, d.ID, title})
+		t.AppendRow([]interface{}{ind, d.ID, artist, title})
 	}
 	t.Render()
 	fmt.Printf("Page %d/%d\n", page, s.Pages)
 }
 
-func handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
-
-	for run := range bufChan {
-		fh := &zip.FileHeader{
-			Name:     run.Img.Filename,
-			Modified: time.Now(),
-			Method:   0,
-		}
-		f, err := zipFile.CreateHeader(fh)
-		catch(err)
-
-		_, err = io.Copy(f, &run.Buf)
-		catch(err)
-
-		completion <- true
-	}
-}
-
 //NewDoujin is used to generate a doujin instance with Image instances attached at APIImages
-func NewDoujin(nnn int) Doujin {
-	url := fmt.Sprintf("http://nhentai.net/api/gallery/%d", nnn)
-	res, err := http.Get(url)
+func (a *APIClient) NewDoujin(nnn int) Doujin {
+	url := fmt.Sprintf("%s/gallery/%d", a.BaseURL, nnn)
+	res, err := a.Client.Get(url)
 	catch(err)
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -191,18 +124,19 @@ func NewDoujin(nnn int) Doujin {
 	catch(jsonErr)
 
 	hold.APIImages = hold.generateImages()
+	hold.Client = a
 	return hold
 }
 
-func NewSearch(query string, page int) Search {
-	surl, err := url.Parse("https://nhentai.net/api/galleries/search")
+func (a *APIClient) NewSearch(query string, page int) Search {
+	surl, err := url.Parse(a.BaseURL + "/galleries/search")
 	catch(err)
 
 	values := url.Values{}
 	values.Add("query", query)
 	values.Add("page", strconv.Itoa(page))
 	surl.RawQuery = values.Encode()
-	resp, err := http.Get(surl.String())
+	resp, err := a.Client.Get(surl.String())
 	catch(err)
 
 	search := Search{}
@@ -211,5 +145,7 @@ func NewSearch(query string, page int) Search {
 
 	jsonErr := json.Unmarshal(body, &search)
 	catch(jsonErr)
+
+	search.Client = a
 	return search
 }

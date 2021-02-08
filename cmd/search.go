@@ -36,17 +36,20 @@ to quickly create a Cobra application.`,
 		artist, _ := cmd.Flags().GetBool("artist")
 		all, _ := cmd.Flags().GetBool("all")
 		page, _ := cmd.Flags().GetInt("page")
-		search := api.NewSearch(args[0], page)
+
+		client := api.NewClient(artist)
+		search := client.NewSearch(args[0], page)
+
 		if cmd.Flags().Changed("number") {
 			ns, _ := cmd.Flags().GetIntSlice("number")
 			for _, n := range ns {
 				d := search.ReturnDoujin(n)
-				d.DownloadZip(5, false, artist)
+				d.DownloadZip()
 			}
 		} else if all {
-			for ind, _ := range search.Result {
+			for ind := range search.Result {
 				doujin := search.ReturnDoujin(ind)
-				doujin.DownloadZip(5, false, artist)
+				doujin.DownloadZip()
 			}
 		} else {
 			search.RenderTable(true, page)

@@ -3,8 +3,16 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"sync"
+	"net/http"
 )
+
+type APIClient struct {
+	BaseURL string
+	Client  *http.Client
+	Artist  bool
+	// Buffer  chan zipImage
+	Limit chan struct{}
+}
 
 //Doujin a quick struct for unpacking the response from the nhentai API.
 // Used for responses from nhentai.net/api/galleries/:magicNumber
@@ -28,11 +36,13 @@ type Doujin struct {
 		Name string      `json:"name"`
 	} `json:"tags"`
 	APIImages []Image
+	Client    *APIClient
 }
 
 type Search struct {
 	Result []Doujin `json:"result"`
 	Pages  int      `json:"num_pages"`
+	Client *APIClient
 }
 
 type image struct {
@@ -60,7 +70,7 @@ const (
 )
 
 type zipImage struct {
-	Img Image
-	Buf bytes.Buffer
-	Wg  *sync.WaitGroup
+	// Img Image
+	Filename string
+	Buf      bytes.Buffer
 }
