@@ -21,7 +21,7 @@ func catch(err error) {
 }
 
 func NewClient(args ...interface{}) (client APIClient) {
-	limit := 5
+	limit := 3
 	client = APIClient{
 		BaseURL: "https://nhentai.net/api",
 		Client: &http.Client{

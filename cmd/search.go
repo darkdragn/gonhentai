@@ -32,13 +32,27 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// search := api.NewSearch(args[0], 1)
-		artist, _ := cmd.Flags().GetBool("artist")
 		all, _ := cmd.Flags().GetBool("all")
+		artist, _ := cmd.Flags().GetBool("artist")
 		page, _ := cmd.Flags().GetInt("page")
 
 		client := api.NewClient(artist)
-		search := client.NewSearch(args[0], page)
+		searchString := args[0]
+
+		checks := map[string]string{
+			"uncensored": " tags:uncensored",
+			"english":    " languages:english",
+			"long":       " pages:>50",
+		}
+
+		for b, s := range checks {
+			v, _ := cmd.Flags().GetBool(b)
+			if v {
+				searchString += s
+			}
+		}
+
+		search := client.NewSearch(searchString, page)
 
 		if cmd.Flags().Changed("number") {
 			ns, _ := cmd.Flags().GetIntSlice("number")
@@ -69,8 +83,11 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// searchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	searchCmd.Flags().Bool("all", false, "Download all results")
+	searchCmd.Flags().BoolP("artist", "a", false, "Store things in an artist directory")
+	searchCmd.Flags().BoolP("english", "e", false, "Add languages:english to search string")
+	searchCmd.Flags().BoolP("long", "l", false, "Add pages:>50 to search string")
+	searchCmd.Flags().BoolP("uncensored", "u", false, "Add tags:uncensored to search string")
 	searchCmd.Flags().IntSliceP("number", "n", []int{50}, "Pull")
 	searchCmd.Flags().IntP("page", "p", 1, "Select search page")
-	searchCmd.Flags().BoolP("artist", "a", false, "Store things in an artist directory")
-	searchCmd.Flags().Bool("all", false, "Download all results")
 }
