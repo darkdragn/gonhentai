@@ -67,7 +67,7 @@ func (d *Doujin) determineFilename() (filename string) {
 	return
 }
 
-func (a *APIClient) imageToZip(i Image, bufChan chan zipImage) {
+func (a *Client) imageToZip(i Image, bufChan chan zipImage) {
 	buf := new(bytes.Buffer)
 	resp, err := a.Client.Get(i.URL)
 	catch(err)
@@ -79,7 +79,7 @@ func (a *APIClient) imageToZip(i Image, bufChan chan zipImage) {
 	bufChan <- zipImage{Filename: i.Filename, Buf: *buf}
 }
 
-func (a *APIClient) handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
+func (a *Client) handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
 	for run := range bufChan {
 		fh := &zip.FileHeader{
 			Name:     run.Filename,

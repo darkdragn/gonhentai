@@ -20,9 +20,11 @@ func catch(err error) {
 	}
 }
 
-func NewClient(args ...interface{}) (client APIClient) {
+//NewClient will generate a basic api client for use.
+//Valid optional args are: Int: set the limit for goroutines, bool: Flag artist in use for PrettyNames
+func NewClient(args ...interface{}) (client Client) {
 	limit := 3
-	client = APIClient{
+	client = Client{
 		BaseURL: "https://nhentai.net/api",
 		Client: &http.Client{
 			Timeout: time.Second * 10,
@@ -42,6 +44,7 @@ func NewClient(args ...interface{}) (client APIClient) {
 	return
 }
 
+//Artist will walk tags to discover the first artist tag for the doujin
 func (d *Doujin) Artist() string {
 	for _, tag := range d.Tags {
 		if tag.Type == "artist" {
@@ -89,11 +92,13 @@ func (it *imageType) extension() (ext string) {
 	return
 }
 
+//ReturnDoujin will take an index number and return a doujin from the indexed search `Result`
 func (s Search) ReturnDoujin(index int) Doujin {
 	magicNumber, _ := s.Result[index].ID.Int64()
 	return s.Client.NewDoujin(int(magicNumber))
 }
 
+//RenderTable will provide a pretty view of the search results
 func (s Search) RenderTable(pretty bool, page int) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -110,7 +115,7 @@ func (s Search) RenderTable(pretty bool, page int) {
 }
 
 //NewDoujin is used to generate a doujin instance with Image instances attached at APIImages
-func (a *APIClient) NewDoujin(nnn int) Doujin {
+func (a *Client) NewDoujin(nnn int) Doujin {
 	url := fmt.Sprintf("%s/gallery/%d", a.BaseURL, nnn)
 	res, err := a.Client.Get(url)
 	catch(err)
@@ -128,7 +133,8 @@ func (a *APIClient) NewDoujin(nnn int) Doujin {
 	return hold
 }
 
-func (a *APIClient) NewSearch(query string, page int) Search {
+//NewSearch will return a Search struct from the qurey and page information
+func (a *Client) NewSearch(query string, page int) Search {
 	surl, err := url.Parse(a.BaseURL + "/galleries/search")
 	catch(err)
 

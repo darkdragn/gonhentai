@@ -17,35 +17,34 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
+	"github.com/darkdragn/gonhentai/api"
 	"github.com/spf13/cobra"
 )
 
-// pullCmd represents the pull command
 var pullCmd = &cobra.Command{
-	Use:   "pull",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "pull MAGICNUMBER",
+	Short: "Pull a single gallery from nhentai, use the Magic Number",
+	Long: `Pull a single galler from nhentai, use the Magic Number...
+	
+If you're not sure what that is, look at the gallery url:
+https://nhentai.net/g/18511/
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+In this case it's 18511... you can thank me later. ;)`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("pull called")
+		ind, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Println("Please provide and integer as the argument.")
+			fmt.Printf("Argument provided: %v\n", args[0])
+		}
+		client := api.NewClient()
+		doujin := client.NewDoujin(ind)
+		doujin.DownloadZip()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(pullCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// pullCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// pullCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

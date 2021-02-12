@@ -1,5 +1,6 @@
+//Package cmd is used to build the cli
 /*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+Copyright © 2021 Darkdragn
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,16 +21,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// searchCmd represents the search command
 var searchCmd = &cobra.Command{
-	Use:   "search",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "search [flags] SEARCH_QUERY",
+	Short: "Run a search on nhentai! Pull a selected gallery with -n",
+	Long: `The easiest way to rip a mountain of content from nhentai for
+personal use! Search supports all tags and other. Checkout of nhentai's
+search FAQ for details.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Example: This will pull all uncensored galleries from artist yamatogawa
+that have been translated into english
+
+gonhentai search "artist:yamatogawa tags:uncensored languages:english" -a --all
+
+Or even easier:
+gonhentai search "artist:yamatogawa" -e -u -a --all`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		all, _ := cmd.Flags().GetBool("all")
@@ -73,16 +78,6 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(searchCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// searchCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// searchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	searchCmd.Flags().Bool("all", false, "Download all results")
 	searchCmd.Flags().BoolP("artist", "a", false, "Store things in an artist directory")
 	searchCmd.Flags().BoolP("english", "e", false, "Add languages:english to search string")

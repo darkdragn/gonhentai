@@ -6,12 +6,12 @@ import (
 	"net/http"
 )
 
-type APIClient struct {
+//Client is used to store common api information for http requests
+type Client struct {
 	BaseURL string
 	Client  *http.Client
 	Artist  bool
-	// Buffer  chan zipImage
-	Limit chan struct{}
+	Limit   chan struct{}
 }
 
 //Doujin a quick struct for unpacking the response from the nhentai API.
@@ -36,13 +36,14 @@ type Doujin struct {
 		Name string      `json:"name"`
 	} `json:"tags"`
 	APIImages []Image
-	Client    *APIClient
+	Client    *Client
 }
 
+//Search is a base struct for search results from the api
 type Search struct {
 	Result []Doujin `json:"result"`
 	Pages  int      `json:"num_pages"`
-	Client *APIClient
+	Client *Client
 }
 
 type image struct {
