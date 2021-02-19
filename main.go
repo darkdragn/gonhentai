@@ -1,22 +1,64 @@
-/*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package main
 
-import "github.com/darkdragn/gonhentai/cmd"
+import (
+	// "fmt"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/darkdragn/gonhentai/api"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	app = kingpin.New("gonhentai", "A command-line nhentai ripper.")
+
+	pull = app.Command("pull", "Pull a single gallery.")
+	//   registerNick = register.Arg("nick", "Nickname for user.").Required().String()
+	//   registerName = register.Arg("name", "Name of user.").Required().String()
+
+	search           = app.Command("search", "Search for hentai.")
+	searchString     = search.Arg("search", "Search params (ref nhentai tag docs).").Strings()
+	searchAll        = search.Flag("all", "Download all results").Bool()
+	searchArtist     = search.Flag("artist", "Store downloads in artist folder").Short('a').Bool()
+	searchEnglish    = search.Flag("english", "Add languages:english to the search string").Short('e').Bool()
+	searchLong       = search.Flag("long", "Add pages:>50 to search string").Short('l').Bool()
+	searchNumber     = search.Flag("number", "Pull index from the search").Short('n').String()
+	searchPage       = search.Flag("page", "Add page number to query params").Short('p').Default("1").Int()
+	searchUncensored = search.Flag("uncensored", "Add tags:uncensored").Short('u').Bool()
+)
 
 func main() {
-	cmd.Execute()
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case search.FullCommand():
+		text := strings.Join(*searchString, " ")
+		client := api.NewClient(*searchArtist)
+
+		if *searchEnglish {
+			text += " languages:english"
+		}
+		if *searchLong {
+			text += " pages:>50"
+		}
+		if *searchUncensored {
+			text += " tags:uncensored"
+		}
+		search := client.NewSearch(text, *searchPage)
+
+		fmt.Printf("%v", *searchNumber)
+		if len(*searchNumber) > 0 {
+			for n := range strings.Split(*searchNumber, ",") {
+				fmt.Printf("%d", n)
+				d := search.ReturnDoujin(int(n))
+				d.DownloadZip()
+			}
+		} else if *searchAll {
+			for ind := range search.Result {
+				doujin := search.ReturnDoujin(ind)
+				doujin.DownloadZip()
+			}
+		} else {
+			search.RenderTable(true, *searchPage)
+		}
+	}
 }
