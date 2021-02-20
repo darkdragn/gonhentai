@@ -134,13 +134,16 @@ func (a *Client) NewDoujin(nnn int) Doujin {
 }
 
 //NewSearch will return a Search struct from the qurey and page information
-func (a *Client) NewSearch(query string, page int) Search {
+func (a *Client) NewSearch(query string, page int, sort string) Search {
 	surl, err := url.Parse(a.BaseURL + "/galleries/search")
 	catch(err)
 
 	values := url.Values{}
 	values.Add("query", query)
 	values.Add("page", strconv.Itoa(page))
+	if sort != "" {
+		values.Add("sort", sort)
+	}
 	surl.RawQuery = values.Encode()
 	resp, err := a.Client.Get(surl.String())
 	catch(err)

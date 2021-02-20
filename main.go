@@ -2,7 +2,6 @@ package main
 
 import (
 	// "fmt"
-	"fmt"
 	"os"
 	"strings"
 
@@ -17,14 +16,17 @@ var (
 	//   registerNick = register.Arg("nick", "Nickname for user.").Required().String()
 	//   registerName = register.Arg("name", "Name of user.").Required().String()
 
-	search           = app.Command("search", "Search for hentai.")
-	searchString     = search.Arg("search", "Search params (ref nhentai tag docs).").Strings()
-	searchAll        = search.Flag("all", "Download all results").Bool()
-	searchArtist     = search.Flag("artist", "Store downloads in artist folder").Short('a').Bool()
-	searchEnglish    = search.Flag("english", "Add languages:english to the search string").Short('e').Bool()
-	searchLong       = search.Flag("long", "Add pages:>50 to search string").Short('l').Bool()
-	searchNumber     = search.Flag("number", "Pull index from the search").Short('n').String()
-	searchPage       = search.Flag("page", "Add page number to query params").Short('p').Default("1").Int()
+	search        = app.Command("search", "Search for hentai.")
+	searchString  = search.Arg("search", "Search params (ref nhentai tag docs).").Strings()
+	searchAll     = search.Flag("all", "Download all results").Bool()
+	searchArtist  = search.Flag("artist", "Store downloads in artist folder").Short('a').Bool()
+	searchEnglish = search.Flag("english", "Add languages:english to the search string").Short('e').Bool()
+	searchLong    = search.Flag("long", "Add pages:>50 to search string").Short('l').Bool()
+	searchNumber  = search.Flag("number", "Pull index from the search").Short('n').String()
+	searchPage    = search.Flag("page", "Add page number to query params").Short('p').Default("1").Int()
+	searchPopular = search.Flag("popular", "Add popular query parameters to the search").Bool()
+	searchSort    = search.Flag(
+		"sort", "Add a sort string to the query params (popular, popular-week, popular-today").Short('s').String()
 	searchUncensored = search.Flag("uncensored", "Add tags:uncensored").Short('u').Bool()
 )
 
@@ -33,6 +35,7 @@ func main() {
 	case search.FullCommand():
 		text := strings.Join(*searchString, " ")
 		client := api.NewClient(*searchArtist)
+		sort := ""
 
 		if *searchEnglish {
 			text += " languages:english"
@@ -43,12 +46,16 @@ func main() {
 		if *searchUncensored {
 			text += " tags:uncensored"
 		}
-		search := client.NewSearch(text, *searchPage)
+		if *searchPopular {
+			sort = "popular"
+		} else if *searchSort != "" {
+			sort = *searchSort
+		}
 
-		fmt.Printf("%v", *searchNumber)
+		search := client.NewSearch(text, *searchPage, sort)
+
 		if len(*searchNumber) > 0 {
 			for n := range strings.Split(*searchNumber, ",") {
-				fmt.Printf("%d", n)
 				d := search.ReturnDoujin(int(n))
 				d.DownloadZip()
 			}
