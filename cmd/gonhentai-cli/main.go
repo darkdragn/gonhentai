@@ -2,7 +2,9 @@ package main
 
 import (
 	// "fmt"
+	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/darkdragn/gonhentai/api"
@@ -63,8 +65,12 @@ func main() {
 		)
 
 		if len(*searchNumber) > 0 {
-			for n := range strings.Split(*searchNumber, ",") {
-				d := search.ReturnDoujin(int(n))
+			for _, n := range strings.Split(*searchNumber, ",") {
+				num, err := strconv.Atoi(n)
+				if err != nil {
+					log.Panic(err)
+				}
+				d := search.ReturnDoujin(num)
 				d.DownloadZip()
 			}
 		} else if *searchAll {
