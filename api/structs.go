@@ -46,6 +46,14 @@ type Search struct {
 	Client *Client
 }
 
+//SearchOpts is intended to provide a common basing for expanding the options
+//allowed for search in the future
+type SearchOpts struct {
+	Search string
+	Page   int
+	Sort   string
+}
+
 type image struct {
 	Type   imageType `json:"t"`
 	Width  int       `json:"w"`

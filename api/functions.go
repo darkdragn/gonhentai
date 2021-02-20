@@ -108,6 +108,9 @@ func (s Search) RenderTable(pretty bool, page int) {
 		if pretty {
 			title = d.Titles.Pretty
 		}
+		if len(title) > 75{
+			title = title[0:75]
+		}
 		t.AppendRow([]interface{}{ind, d.ID, artist, title})
 	}
 	t.Render()
@@ -134,15 +137,15 @@ func (a *Client) NewDoujin(nnn int) Doujin {
 }
 
 //NewSearch will return a Search struct from the qurey and page information
-func (a *Client) NewSearch(query string, page int, sort string) Search {
+func (a *Client) NewSearch(s *SearchOpts) Search {
 	surl, err := url.Parse(a.BaseURL + "/galleries/search")
 	catch(err)
 
 	values := url.Values{}
-	values.Add("query", query)
-	values.Add("page", strconv.Itoa(page))
-	if sort != "" {
-		values.Add("sort", sort)
+	values.Add("query", s.Search)
+	values.Add("page", strconv.Itoa(s.Page))
+	if s.Sort != "" {
+		values.Add("sort", s.Sort)
 	}
 	surl.RawQuery = values.Encode()
 	resp, err := a.Client.Get(surl.String())

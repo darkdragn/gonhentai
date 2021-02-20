@@ -17,7 +17,7 @@ var (
 	//   registerName = register.Arg("name", "Name of user.").Required().String()
 
 	search        = app.Command("search", "Search for hentai.")
-	searchString  = search.Arg("search", "Search params (ref nhentai tag docs).").Strings()
+	searchString  = search.Arg("search", "Search params (ref nhentai tag docs).").Required().Strings()
 	searchAll     = search.Flag("all", "Download all results").Bool()
 	searchArtist  = search.Flag("artist", "Store downloads in artist folder").Short('a').Bool()
 	searchEnglish = search.Flag("english", "Add languages:english to the search string").Short('e').Bool()
@@ -26,7 +26,9 @@ var (
 	searchPage    = search.Flag("page", "Add page number to query params").Short('p').Default("1").Int()
 	searchPopular = search.Flag("popular", "Add popular query parameters to the search").Bool()
 	searchSort    = search.Flag(
-		"sort", "Add a sort string to the query params (popular, popular-week, popular-today").Short('s').String()
+		"sort", "Add a sort string to the query params (popular, popular-week, popular-today").
+		Short('s').
+		Enum("popular", "popular-week", "popular-today")
 	searchUncensored = search.Flag("uncensored", "Add tags:uncensored").Short('u').Bool()
 )
 
@@ -52,7 +54,13 @@ func main() {
 			sort = *searchSort
 		}
 
-		search := client.NewSearch(text, *searchPage, sort)
+		search := client.NewSearch(
+			&api.SearchOpts{
+				Search: text,
+				Page:   *searchPage,
+				Sort:   sort,
+			},
+		)
 
 		if len(*searchNumber) > 0 {
 			for n := range strings.Split(*searchNumber, ",") {
