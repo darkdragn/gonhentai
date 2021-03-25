@@ -56,7 +56,7 @@ func (d *Doujin) Artist() string {
 
 func (d *Doujin) generateImage(i int, t imageType) Image {
 	image := Image{Index: i, MediaID: d.MediaID, Type: t}
-	image.Filename = image.filename()
+	image.Filename = image.zfilename()
 	image.URL = image.generateURL()
 	return image
 }
@@ -72,6 +72,10 @@ func (d *Doujin) generateImages() []Image {
 
 func (i *Image) filename() string {
 	return fmt.Sprintf("%d.%s", i.Index, i.Type.extension())
+}
+
+func (i *Image) zfilename() string {
+	return fmt.Sprintf("%03d.%s", i.Index, i.Type.extension())
 }
 
 func (i *Image) generateURL() string {
@@ -108,7 +112,7 @@ func (s Search) RenderTable(pretty bool, page int) {
 		if pretty {
 			title = d.Titles.Pretty
 		}
-		if len(title) > 75{
+		if len(title) > 75 {
 			title = title[0:75]
 		}
 		t.AppendRow([]interface{}{ind, d.ID, artist, title})
