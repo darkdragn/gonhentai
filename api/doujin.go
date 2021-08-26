@@ -2,12 +2,10 @@ package api
 
 import (
 	"archive/zip"
-	"bytes"
 	"io"
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -52,6 +50,16 @@ func (d Doujin) DownloadZip() {
 	bar.Finish()
 }
 
+//Artist will walk tags to discover the first artist tag for the doujin
+func (d *Doujin) Artist() string {
+	for _, tag := range d.Tags {
+		if tag.Type == "artist" {
+			return tag.Name
+		}
+	}
+	return "Not Found"
+}
+
 func (d *Doujin) determineFilename() (filename string) {
 	var title string
 	if d.Client.Artist {
@@ -67,31 +75,18 @@ func (d *Doujin) determineFilename() (filename string) {
 	return
 }
 
-func (a *Client) imageToZip(i Image, bufChan chan zipImage) {
-	buf := new(bytes.Buffer)
-	resp, err := a.Client.Get(i.URL)
-	catch(err)
-
-	defer resp.Body.Close()
-	_, err = io.Copy(buf, resp.Body)
-	catch(err)
-
-	bufChan <- zipImage{Filename: i.Filename, Buf: *buf}
+func (d *Doujin) generateImage(i int, t imageType) Image {
+	image := Image{Index: i, MediaID: d.MediaID, Type: t}
+	image.Filename = image.zfilename()
+	image.URL = image.generateURL()
+	return image
 }
 
-func (a *Client) handleZip(bufChan chan zipImage, zipFile *zip.Writer, completion chan bool) {
-	for run := range bufChan {
-		fh := &zip.FileHeader{
-			Name:     run.Filename,
-			Modified: time.Now(),
-			Method:   0,
-		}
-		f, err := zipFile.CreateHeader(fh)
-		catch(err)
+func (d *Doujin) generateImages() []Image {
+	images := make([]Image, len(d.Images.Pages))
 
-		_, err = io.Copy(f, &run.Buf)
-		catch(err)
-
-		completion <- true
+	for index, img := range d.Images.Pages {
+		images[index] = d.generateImage(index+1, img.Type)
 	}
+	return images
 }

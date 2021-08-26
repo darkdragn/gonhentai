@@ -14,9 +14,8 @@ import (
 var (
 	app = kingpin.New("gonhentai", "A command-line nhentai ripper.")
 
-	pull = app.Command("pull", "Pull a single gallery.")
-	//   registerNick = register.Arg("nick", "Nickname for user.").Required().String()
-	//   registerName = register.Arg("name", "Name of user.").Required().String()
+	pull       = app.Command("pull", "Pull a single gallery.")
+	pullNumber = pull.Arg("index", "Index for the gallery.").Required().Int()
 
 	search        = app.Command("search", "Search for hentai.")
 	searchString  = search.Arg("search", "Search params (ref nhentai tag docs).").Required().Strings()
@@ -36,6 +35,12 @@ var (
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case pull.FullCommand():
+		index := *pullNumber
+		client := api.NewClient()
+		doujin := client.NewDoujin(index)
+		doujin.DownloadZip()
+
 	case search.FullCommand():
 		text := strings.Join(*searchString, " ")
 		client := api.NewClient(*searchArtist)
